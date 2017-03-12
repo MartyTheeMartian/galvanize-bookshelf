@@ -6,5 +6,79 @@ const express = require('express');
 const router = express.Router();
 
 // YOUR CODE HERE
+const knex = require('../knex');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
+const { camelizeKeys, decamelizeKeys } = require('humps');
+const bcrypt = require('bcrypt-as-promised');
+require('dotenv').config();
+
+router.use(cookieParser());
+
+router.get('/token', (req, res, next) => {
+  jwt.verify(req.cookies.token, process.env.JWT_KEY, (err, payload) => {
+      if (err) {
+        res.send(false);
+      }
+      else {
+        res.send(true);
+      }
+    });
+});
+
+router.post('/token', (req, res, next) => {
+
+  if(!req.body.email) {
+    res.set('Content-Type', 'text/plain');
+    res.status(400).send('Email must not be blank');
+  }
+  else if (!req.body.password) {
+    res.set('Content-Type', 'text/plain');
+    res.status(400).send('Password must not be blank');
+  }
+  else {
+    return knex('users')
+      .where({
+        email: req.body.email
+      })
+      .first()
+      .then((user) => {
+          bcrypt.compare(req.body.password, user.hashed_password)
+          .then((match) => {
+            if(match) {
+              const claim = { userId: user.id };
+              const token = jwt.sign(claim, process.env.JWT_KEY, {
+                expiresIn: '7 days'
+              });
+              res.cookie('token', token, {
+                httpOnly: true,
+                expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+                secure: router.get('env') === 'test'
+              });
+              delete user.hashed_password;
+              res.send(camelizeKeys(user));
+            }
+          })
+          .catch(() => {
+            res.set('Content-Type', 'text/plain');
+            res.status(400).send('Bad email or password');
+          });
+
+      })
+      .catch((err) => {
+        res.set('Content-Type', 'text/plain');
+        res.status(400).send('Bad email or password');
+      });
+  }
+
+});
+
+router.delete('/token', (req, res, next) => {
+
+  res.clearCookie('token', { path: '/token' });
+  res.send(true);
+
+});
 
 module.exports = router;
