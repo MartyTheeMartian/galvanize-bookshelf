@@ -11,7 +11,9 @@ const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const { camelizeKeys, decamelizeKeys } = require('humps');
-require('dotenv').config();
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 router.use('/favorites', cookieParser(), (req, res, next) => {
   jwt.verify(req.cookies.token, process.env.JWT_KEY, (err, payload) => {
