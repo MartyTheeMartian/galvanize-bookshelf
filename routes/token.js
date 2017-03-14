@@ -16,20 +16,32 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 
-router.use(cookieParser());
-
-router.get('/token', (req, res, next) => {
-  jwt.verify(req.cookies.token, process.env.JWT_KEY, (err, payload) => {
+router.use('/token', (req, res, next) => {
+  if (req.cookies.token) {
+    jwt.verify(req.cookies.token, process.env.JWT_KEY, (err, payload) => {
       if (err) {
-        res.send(false);
+        res.set('Content-Type', 'text/plain');
+        res.status(401).send('Unauthorized');
       }
       else {
-        res.send(true);
+        next();
       }
     });
+  }
+  else {
+    next();
+  }
 });
 
-// refactor
+router.get('/token', (req, res, next) => {
+  if (req.cookies.token) {
+    res.send(true);
+  }
+  else {
+    res.send(false);
+  }
+});
+
 router.post('/token', (req, res, next) => {
 
   let user;

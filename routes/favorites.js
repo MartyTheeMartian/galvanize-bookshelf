@@ -18,15 +18,15 @@ let tokenId;
 
 router.use('/favorites', (req, res, next) => {
   jwt.verify(req.cookies.token, process.env.JWT_KEY, (err, payload) => {
-      if (err) {
-        res.set('Content-Type', 'text/plain');
-        res.status(401).send('Unauthorized');
-      }
-      else {
-        tokenId = payload.userId;
-        next();
-      }
-    });
+    if (err) {
+      res.set('Content-Type', 'text/plain');
+      res.status(401).send('Unauthorized');
+    }
+    else {
+      tokenId = payload.userId;
+      next();
+    }
+  });
 });
 
 router.get('/favorites', (req, res, next) => {

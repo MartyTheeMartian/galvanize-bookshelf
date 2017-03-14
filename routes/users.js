@@ -16,7 +16,6 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 
-router.use(cookieParser());
 
 router.post('/users', (req, res, next) => {
 
