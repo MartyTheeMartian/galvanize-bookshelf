@@ -29,7 +29,10 @@ router.get('/token', (req, res, next) => {
     });
 });
 
+// refactor
 router.post('/token', (req, res, next) => {
+
+  let user;
 
   if(!req.body.email) {
     res.set('Content-Type', 'text/plain');
@@ -45,28 +48,24 @@ router.post('/token', (req, res, next) => {
         email: req.body.email
       })
       .first()
-      .then((user) => {
-          bcrypt.compare(req.body.password, user.hashed_password)
-          .then((match) => {
-            if(match) {
-              const claim = { userId: user.id };
-              const token = jwt.sign(claim, process.env.JWT_KEY, {
-                expiresIn: '7 days'
-              });
-              res.cookie('token', token, {
-                httpOnly: true,
-                expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-                secure: router.get('env') === 'test'
-              });
-              delete user.hashed_password;
-              res.send(camelizeKeys(user));
-            }
-          })
-          .catch(() => {
-            res.set('Content-Type', 'text/plain');
-            res.status(400).send('Bad email or password');
+      .then((userResult) => {
+        user = userResult;
+        return bcrypt.compare(req.body.password, user.hashed_password);
+      })
+      .then((match) => {
+        if(match) {
+          const claim = { userId: user.id };
+          const token = jwt.sign(claim, process.env.JWT_KEY, {
+            expiresIn: '7 days'
           });
-
+          res.cookie('token', token, {
+            httpOnly: true,
+            expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+            secure: router.get('env') === 'test'
+          });
+          delete user.hashed_password;
+          res.send(camelizeKeys(user));
+        }
       })
       .catch((err) => {
         res.set('Content-Type', 'text/plain');

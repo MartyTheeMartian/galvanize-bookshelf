@@ -14,14 +14,16 @@ const { camelizeKeys, decamelizeKeys } = require('humps');
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
+let tokenId;
 
-router.use('/favorites', cookieParser(), (req, res, next) => {
+router.use('/favorites', (req, res, next) => {
   jwt.verify(req.cookies.token, process.env.JWT_KEY, (err, payload) => {
       if (err) {
         res.set('Content-Type', 'text/plain');
         res.status(401).send('Unauthorized');
       }
       else {
+        tokenId = payload.userId;
         next();
       }
     });
@@ -68,7 +70,7 @@ router.post('/favorites', (req, res, next) => {
     knex('favorites')
       .insert({
         book_id: req.body.bookId,
-        user_id: 1
+        user_id: tokenId
       },'*')
       .then((favorite) => {
         res.send(camelizeKeys(favorite[0]));
